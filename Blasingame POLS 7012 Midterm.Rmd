@@ -1,0 +1,104 @@
+---
+output: html_document
+---
+<center>POLS 7012 Midterm</center>
+<center>Elise Blasingame</center>
+<center>October 28, 2020</center>
+
+
+
+
+
+### Problem 1
+
+$$U(x)=\sqrt{1-x}+\sqrt{\frac{x}{W}}$$
+First, we need to take the derivative of this function.
+
+$$\frac{d}{dx}U(x)=\frac{d}{dx}(\sqrt{1-x})+\frac{d}{dx}(\sqrt{\frac{x}{W}})$$
+$$\frac{d}{dx}U(x)=\frac{d}{dx}[(1-x)^\frac{1}{2}]+\frac{d}{dx}[({\frac{x}{W}})^\frac{1}{2}]$$
+We can multiply each function's derivative by the derivative of the value inside the parenthesis:
+$$\frac{d}{dx}U(x)=(-1)[\frac{1}{2}(1-x)^\frac{-1}{2}]+\frac{1}{2W}(\frac{x}{W})^\frac{-1}{2}$$
+
+Now, we need to set the derivative equal to zero, and solve for x.
+$$0=(-1)[\frac{1}{2}(1-x)^\frac{-1}{2}]+\frac{1}{2W}(\frac{x}{W})^\frac{-1}{2}$$
+$$0=\frac{1}{\sqrt{1-x}}+\frac{1}{\sqrt\frac xW}$$
+$${\sqrt{1-x}}=W{\sqrt\frac xW}$$
+$${1-x}=Wx$$
+$$x=\frac{1}{1+W}$$
+This is the fraction that represents the tax revenue he should devote to private goods to maximize his winning coalition.
+
+Based on this, we can say that as the winning coalition grows, the amount of revenue he should devote to private goods decreases.
+
+### Problem 2
+```{r load tidyverse}
+library(tidyverse)
+```
+##### Step 1: Load the FIW data into R.
+```{r problem 2.1}
+
+FIW <- read.csv(file = 'data/2020_All_Data_FIW_2013-2020.csv', skip = 1)
+head(FIW)
+```
+
+##### Step 2: Keep only the most recent year of data. Keep only the countries (not the territories).
+
+```{r problem 2.2}
+
+#library(dplyr)
+
+
+FIW2020 <- filter(FIW, Edition == '2020') #Filter for 2020 data only
+
+
+FIW2020 %>% 
+  select(Country.Territory, C.T, Edition, A, B, C, D, E, F, G) %>% # select relevant variables
+  filter(C.T == "c") %>%
+  head(10) # output the first 10 rows
+```
+
+##### Step 3: Of the 25 questions, some are about democracy (i.e. are political leaders elected?) and others are about freedom/liberty (i.e. can people practice their religion without fear of persecution? is there a free and independent media? etc.). Create one variable called democracy_score, equal to the sum of all the scores on questions related to democracy, and another variable called liberty_score, equal to the sum of all the scores on questions related to liberty.
+
+```{r problem 2.3}
+
+FIW2020 <- FIW2020 %>% #create democracy_score
+  mutate(democracy_score = A + B + C)
+
+summary(FIW2020$democracy_score)
+
+FIW2020 <- FIW2020 %>% #create liberty_score
+  mutate(liberty_score = D + E + F + G)
+
+summary(FIW2020$liberty_score)
+```
+
+##### Step 4: Visualize the relationship between liberty and democracy.
+
+```{r problem 2.4}
+
+ggplot(FIW2020, aes(x=democracy_score, y=liberty_score)) +
+  geom_point(color = 'darkcyan', shape=1)+
+  theme_classic() +
+  labs(x = 'Democracy Scores',
+       y = 'Liberty Scores')
+```
+
+##### Step 5: Split the countries into democratic and non-democratic (your choice where you split) and conduct a bivariate hypothesis test. Are the democratic countries more free on average than the non-democratic countries?
+
+ENB: I am setting the democracy cut-off at countries with scores of =/>21
+
+```{r problem 2.5}
+
+
+FIW2020 <- FIW2020 %>%
+  mutate(democracy_status = case_when(democracy_score < 21  ~ 'NonDemocratic', TRUE ~ 'Democratic'))
+
+
+test1 <- FIW2020 %>%
+  filter(democracy_status %in% c('NonDemocratic', 'Democratic')) %>%
+  t.test(liberty_score ~ democracy_status, data = .)
+
+
+test1
+```
+
+##### Because the p-value is very low, we can reject the null hypothesis and conclude that Democratic Countries are typically 'more free' than Non-Democratic Countries. 
